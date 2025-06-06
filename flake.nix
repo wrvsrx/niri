@@ -210,6 +210,7 @@
 
             nativeBuildInputs = [
               pkgs.rustPlatform.bindgenHook
+              pkgs.rust-analyzer
               pkgs.pkg-config
               pkgs.wrapGAppsHook4 # For `niri-visual-tests`
             ];
