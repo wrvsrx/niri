@@ -994,52 +994,54 @@ fn make_video_params(
         PropertyFlags::empty()
     };
 
-    pod::object!(
-        SpaTypes::ObjectParamFormat,
-        ParamType::EnumFormat,
-        pod::property!(FormatProperties::MediaType, Id, MediaType::Video),
-        pod::property!(FormatProperties::MediaSubtype, Id, MediaSubtype::Raw),
-        pod::property!(FormatProperties::VideoFormat, Id, format),
-        Property {
-            key: FormatProperties::VideoModifier.as_raw(),
-            flags: PropertyFlags::MANDATORY | dont_fixate,
-            value: pod::Value::Choice(ChoiceValue::Long(Choice(
-                ChoiceFlags::empty(),
-                ChoiceEnum::Enum {
-                    default: formats[0],
-                    alternatives: formats,
-                }
-            )))
-        },
-        pod::property!(
-            FormatProperties::VideoSize,
-            Rectangle,
-            Rectangle {
-                width: size.w,
-                height: size.h,
-            }
-        ),
-        pod::property!(
-            FormatProperties::VideoFramerate,
-            Fraction,
-            Fraction { num: 0, denom: 1 }
-        ),
-        pod::property!(
-            FormatProperties::VideoMaxFramerate,
-            Choice,
-            Range,
-            Fraction,
-            Fraction {
-                num: refresh,
-                denom: 1000
+    pipewire::spa::pod::Object {
+        type_: SpaTypes::ObjectParamFormat.as_raw(),
+        id: ParamType::EnumFormat.as_raw(),
+        properties: vec![
+            pod::property!(FormatProperties::MediaType, Id, MediaType::Video),
+            pod::property!(FormatProperties::MediaSubtype, Id, MediaSubtype::Raw),
+            pod::property!(FormatProperties::VideoFormat, Id, format),
+            Property {
+                key: FormatProperties::VideoModifier.as_raw(),
+                flags: PropertyFlags::MANDATORY | dont_fixate,
+                value: pod::Value::Choice(ChoiceValue::Long(Choice(
+                    ChoiceFlags::empty(),
+                    ChoiceEnum::Enum {
+                        default: formats[0],
+                        alternatives: formats,
+                    },
+                ))),
             },
-            Fraction { num: 1, denom: 1 },
-            Fraction {
-                num: refresh,
-                denom: 1000
-            }
-        ),
-    )
+            pod::property!(
+                FormatProperties::VideoSize,
+                Rectangle,
+                Rectangle {
+                    width: size.w,
+                    height: size.h,
+                }
+            ),
+            pod::property!(
+                FormatProperties::VideoFramerate,
+                Fraction,
+                Fraction { num: 0, denom: 1 }
+            ),
+            pod::property!(
+                FormatProperties::VideoMaxFramerate,
+                Choice,
+                Range,
+                Fraction,
+                Fraction {
+                    num: refresh,
+                    denom: 1000
+                },
+                Fraction { num: 1, denom: 1 },
+                Fraction {
+                    num: refresh,
+                    denom: 1000
+                }
+            ),
+        ],
+    }
 }
 
 fn make_pod(buffer: &mut Vec<u8>, object: pod::Object) -> &Pod {
