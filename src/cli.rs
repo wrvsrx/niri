@@ -26,12 +26,29 @@ pub struct Cli {
     /// on a TTY as your non-main compositor instance, to avoid messing up the global environment.
     #[arg(long)]
     pub session: bool,
+    /// How to handle session environment variables (WAYLAND_DISPLAY, XDG_SESSION_TYPE, etc.).
+    ///
+    /// - `none`: do nothing.
+    /// - `import`: auto-detect systemd or dinit and import the variables into the service manager.
+    /// - `dump`: write the variables to `$XDG_RUNTIME_DIR/niri/init.env`.
+    #[arg(long, value_enum, default_value_t = SessionEnv::Import)]
+    pub session_env: SessionEnv,
     /// Command to run upon compositor startup.
     #[arg(last = true)]
     pub command: Vec<OsString>,
 
     #[command(subcommand)]
     pub subcommand: Option<Sub>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
+pub enum SessionEnv {
+    /// Do not touch the session environment.
+    None,
+    /// Auto-detect systemd or dinit and import the variables into the service manager.
+    Import,
+    /// Write the variables to `$XDG_RUNTIME_DIR/niri/init.env`.
+    Dump,
 }
 
 #[derive(Subcommand)]

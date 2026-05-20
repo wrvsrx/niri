@@ -15,7 +15,7 @@ use clap::{CommandFactory, Parser};
 use clap_complete::Shell;
 use clap_complete_nushell::Nushell;
 use directories::ProjectDirs;
-use niri::cli::{Cli, CompletionShell, Sub};
+use niri::cli::{Cli, CompletionShell, SessionEnv, Sub};
 #[cfg(feature = "dbus")]
 use niri::dbus;
 use niri::ipc::client::handle_msg;
@@ -213,8 +213,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if cli.session {
-        // We're starting as a session. Import our variables.
-        import_environment();
+        match cli.session_env {
+            SessionEnv::Import => import_environment(),
+            SessionEnv::None => {}
+            SessionEnv::Dump => dump_environment(),
+        }
 
         // Inhibit power key handling so we can suspend on it.
         #[cfg(feature = "dbus")]
@@ -274,14 +277,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn import_environment() {
-    let variables = [
-        "WAYLAND_DISPLAY",
-        "DISPLAY",
-        "XDG_CURRENT_DESKTOP",
-        "XDG_SESSION_TYPE",
-        SOCKET_PATH_ENV,
-    ]
-    .join(" ");
+    let variables = SESSION_ENV_VARS.join(" ");
 
     let mut init_system_import = String::new();
     if cfg!(feature = "systemd") {
@@ -321,6 +317,39 @@ fn import_environment() {
         Err(err) => {
             warn!("error spawning shell to import environment: {err:?}");
         }
+    }
+}
+
+const SESSION_ENV_VARS: &[&str] = &[
+    "WAYLAND_DISPLAY",
+    "DISPLAY",
+    "XDG_CURRENT_DESKTOP",
+    "XDG_SESSION_TYPE",
+    SOCKET_PATH_ENV,
+];
+
+fn dump_environment() {
+    let Some(runtime_dir) = env::var_os("XDG_RUNTIME_DIR") else {
+        warn!("XDG_RUNTIME_DIR is not set, cannot dump environment");
+        return;
+    };
+
+    let dir = PathBuf::from(runtime_dir).join("niri");
+    if let Err(err) = std::fs::create_dir_all(&dir) {
+        warn!("error creating {}: {err:?}", dir.display());
+        return;
+    }
+
+    let path = dir.join("init.env");
+    let mut contents = String::new();
+    for var in SESSION_ENV_VARS {
+        if let Some(value) = env::var_os(var) {
+            writeln!(contents, "{var}={}", value.to_string_lossy()).unwrap();
+        }
+    }
+
+    if let Err(err) = std::fs::write(&path, contents) {
+        warn!("error writing {}: {err:?}", path.display());
     }
 }
 
