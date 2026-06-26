@@ -745,6 +745,13 @@ impl State {
         // `focus-at-startup` can target them.
         state.create_virtual_outputs_from_config();
 
+        // If we're headless and nothing (hardware or config) has produced an output, create a
+        // fallback default output so clients have something to render on. This runs after the
+        // config-declared virtual outputs above, so a user-declared output suppresses the default.
+        if let Backend::Headless(headless) = &mut state.backend {
+            headless.ensure_default_output(&mut state.niri);
+        }
+
         // Load the xkb_file config option if set by the user.
         state.load_xkb_file();
         // Initialize some IPC server state.

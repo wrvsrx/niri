@@ -164,9 +164,16 @@ impl Headless {
             }
         }
 
-        // In real headless sessions we want a default output so clients have something to render
-        // on. In tests, the harness explicitly creates predictable `headless-N` outputs; creating
-        // an extra default `HEADLESS-1` here causes name collisions and snapshot churn.
+    }
+
+    /// Create a fallback default output if nothing else has created one.
+    ///
+    /// In real headless sessions we want at least one output so clients have something to render
+    /// on. This must run *after* config-declared virtual outputs are created, so that a user who
+    /// declares their own virtual output in the config does not also get an unwanted default
+    /// `HEADLESS-1`. In tests, the harness explicitly creates predictable `headless-N` outputs, so
+    /// we skip the default here to avoid name collisions and snapshot churn.
+    pub fn ensure_default_output(&mut self, niri: &mut Niri) {
         if self.outputs.is_empty() && !cfg!(test) {
             let _ = self.create_virtual_output(niri, 1920, 1080, 60, None);
         }
